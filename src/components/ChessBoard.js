@@ -94,8 +94,8 @@ const ChessBoard = () => {
         newBoard[promotion.row][promotion.col] = promotion.color === 'white' ? type : type.toLowerCase();
         setBoard(newBoard);
         setPromotion(null); // Скрыть модальное окно
-      };
-      
+    };
+
     // Функция для получения изображения фигуры
     const getPieceImage = (piece) => {
         switch (piece) {
@@ -162,8 +162,75 @@ const ChessBoard = () => {
     };
 
 
+    // return (
+        // <div className="chess-board">
+        //     {board.map((row, rowIndex) => (
+        //         <div key={rowIndex} className="row">
+        //             {row.map((square, colIndex) => (
+        //                 <div
+        //                     key={`${rowIndex}-${colIndex}`}
+        //                     className={`square ${(rowIndex + colIndex) % 2 === 0 ? 'white' : 'black'
+        //                         } ${availableMoves.some(([r, c]) => r === rowIndex && c === colIndex)
+        //                             ? 'highlight'
+        //                             : ''
+        //                         } ${selectedPiece?.row === rowIndex && selectedPiece?.col === colIndex
+        //                             ? 'selected'
+        //                             : ''
+        //                         }`}
+        //                     onClick={() => handleSquareClick(rowIndex, colIndex)}
+        //                 >
+        //                     {square !== '.' && (
+        //                         <img
+        //                             src={getPieceImage(square)}
+        //                             alt={square}
+        //                             className="piece-image"
+        //                         />
+        //                     )}
+        //                 </div>
+        //             ))}
+        //         </div>
+        //     ))}
+
+        //     {promotion && (
+        //         <div className="promotion-modal">
+        //             <div className="promotion-options">
+        //                 {['Q', 'R', 'B', 'N'].map((type) => (
+        //                     <div
+        //                         key={type}
+        //                         className="promotion-piece"
+        //                         onClick={() => handlePromotion(type)}
+        //                     >
+        //                         <img
+        //                             src={getPieceImage(promotion.color === 'white' ? type : type.toLowerCase())}
+        //                             alt={type}
+        //                         />
+        //                     </div>
+        //                 ))}
+        //             </div>
+        //         </div>
+        //     )}
+        // </div>
+
+    // );
+
     return (
-        <div className="chess-board">
+        <div className="chess-board-wrapper">
+            <div className="row-coordinates">
+                {[...Array(8)].map((_, i) => (
+                    <div key={i} className="row-coordinate">
+                        {8 - i}
+                    </div>
+                ))}
+            </div>
+            <div className="board-with-columns">
+                <div className="column-coordinates">
+                    {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((col, i) => (
+                        <div key={i} className="column-coordinate">
+                            {col}
+                        </div>
+                    ))}
+                </div>
+                <div className="chess-board">
             {board.map((row, rowIndex) => (
                 <div key={rowIndex} className="row">
                     {row.map((square, colIndex) => (
@@ -210,8 +277,10 @@ const ChessBoard = () => {
                 </div>
             )}
         </div>
+            </div>
+        </div>
 
-    );
+    )
 };
 
 export default ChessBoard;
