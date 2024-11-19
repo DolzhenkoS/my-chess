@@ -33,6 +33,15 @@ const ChessBoard = () => {
     const [availableMoves, setAvailableMoves] = useState([]); // Доступные ходы
     const [lastMove, setLastMove] = useState(null); // { from: [row, col], to: [row, col], piece: 'P' }
     const [promotion, setPromotion] = useState(null); // { row, col, color }
+    const [castlingRights, setCastlingRights] = useState({
+        whiteKingMoved: false,
+        blackKingMoved: false,
+        whiteRookLeftMoved: false,
+        whiteRookRightMoved: false,
+        blackRookLeftMoved: false,
+        blackRookRightMoved: false,
+    });
+
 
     // Функция для обработки клика по клетке
     const handleSquareClick = (row, col) => {
@@ -67,6 +76,27 @@ const ChessBoard = () => {
                     setPromotion({ row, col, color: piece === 'P' ? 'white' : 'black' });
                 }
 
+                if (selectedPiece.piece.toLowerCase() === 'k' && Math.abs(col - selectedPiece.col) === 2) {
+                    const isWhite = selectedPiece.piece === 'K';
+                    const row = isWhite ? 7 : 0;
+
+                    if (col === 6) {
+                        // Король перемещается на G1/G8, ладья на F1/F8
+                        newBoard[row][5] = newBoard[row][7];
+                        newBoard[row][7] = '.';
+                    } else if (col === 2) {
+                        // Король перемещается на C1/C8, ладья на D1/D8
+                        newBoard[row][3] = newBoard[row][0];
+                        newBoard[row][0] = '.';
+                    }
+
+                    setCastlingRights((prev) => ({
+                        ...prev,
+                        [isWhite ? 'whiteKingMoved' : 'blackKingMoved']: true,
+                        [isWhite ? (col === 6 ? 'whiteRookRightMoved' : 'whiteRookLeftMoved') : (col === 6 ? 'blackRookRightMoved' : 'blackRookLeftMoved')]: true,
+                    }));
+                }
+
                 setBoard(newBoard);
 
                 // Сохраняем последний ход
@@ -75,6 +105,29 @@ const ChessBoard = () => {
                     to: [row, col],
                     piece: selectedPiece.piece,
                 });
+
+                if (selectedPiece.piece.toLowerCase() === 'k') {
+                    setCastlingRights((prev) => ({
+                        ...prev,
+                        [selectedPiece.piece === 'K' ? 'whiteKingMoved' : 'blackKingMoved']: true,
+                    }));
+                }
+
+                if (selectedPiece.piece.toLowerCase() === 'r') {
+                    if (selectedPiece.row === 7 && selectedPiece.col === 0) {
+                        setCastlingRights((prev) => ({ ...prev, whiteRookLeftMoved: true }));
+                    }
+                    if (selectedPiece.row === 7 && selectedPiece.col === 7) {
+                        setCastlingRights((prev) => ({ ...prev, whiteRookRightMoved: true }));
+                    }
+                    if (selectedPiece.row === 0 && selectedPiece.col === 0) {
+                        setCastlingRights((prev) => ({ ...prev, blackRookLeftMoved: true }));
+                    }
+                    if (selectedPiece.row === 0 && selectedPiece.col === 7) {
+                        setCastlingRights((prev) => ({ ...prev, blackRookRightMoved: true }));
+                    }
+                }
+
 
                 setSelectedPiece(null);
                 setAvailableMoves([]);
@@ -99,6 +152,14 @@ const ChessBoard = () => {
                     !attackedSquares.some(([attackedRow, attackedCol]) => moveRow === attackedRow && moveCol === attackedCol)
             );
 
+            // Проверка рокировки
+            if (canCastle(piece === 'K' ? 'white' : 'black', 'kingside')) {
+                moves.push([row, 6]); // Король перемещается на G1 или G8
+            }
+            if (canCastle(piece === 'K' ? 'white' : 'black', 'queenside')) {
+                moves.push([row, 2]); // Король перемещается на C1 или C8
+            }
+
             setSelectedPiece({ piece, row, col });
             setAvailableMoves(moves);
         } else if (piece.toLowerCase() === 'q') {
@@ -119,6 +180,42 @@ const ChessBoard = () => {
         newBoard[promotion.row][promotion.col] = promotion.color === 'white' ? type : type.toLowerCase();
         setBoard(newBoard);
         setPromotion(null); // Скрыть модальное окно
+    };
+
+    const canCastle = (color, side) => {
+        const isWhite = color === 'white';
+
+        // Король и ладья должны быть на своих начальных позициях
+        const kingMoved = isWhite ? castlingRights.whiteKingMoved : castlingRights.blackKingMoved;
+        const rookMoved = isWhite
+            ? side === 'kingside'
+                ? castlingRights.whiteRookRightMoved
+                : castlingRights.whiteRookLeftMoved
+            : side === 'kingside'
+                ? castlingRights.blackRookRightMoved
+                : castlingRights.blackRookLeftMoved;
+
+        if (kingMoved || rookMoved) return false;
+
+        const row = isWhite ? 7 : 0;
+        const kingCol = 4;
+        const rookCol = side === 'kingside' ? 7 : 0;
+
+        // Проверяем, чтобы клетки между королём и ладьёй были пустыми
+        const emptyCols = side === 'kingside' ? [5, 6] : [1, 2, 3];
+        for (const col of emptyCols) {
+            if (board[row][col] !== '.') return false;
+        }
+
+        // Проверяем, чтобы клетки не были под атакой
+        const attackedSquares = getAttackedSquares(board, isWhite ? 'white' : 'black');
+        const kingPath = side === 'kingside' ? [[row, 4], [row, 5], [row, 6]] : [[row, 4], [row, 3], [row, 2]];
+
+        for (const [r, c] of kingPath) {
+            if (attackedSquares.some(([ar, ac]) => ar === r && ac === c)) return false;
+        }
+
+        return true;
     };
 
     const getAttackedSquares = (board, color) => {
