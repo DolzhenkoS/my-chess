@@ -185,7 +185,7 @@ const ChessBoard = () => {
     const canCastle = (color, side) => {
         const isWhite = color === 'white';
 
-        // Король и ладья должны быть на своих начальных позициях
+        // Проверяем, двигались ли король и соответствующая ладья
         const kingMoved = isWhite ? castlingRights.whiteKingMoved : castlingRights.blackKingMoved;
         const rookMoved = isWhite
             ? side === 'kingside'
@@ -198,8 +198,11 @@ const ChessBoard = () => {
         if (kingMoved || rookMoved) return false;
 
         const row = isWhite ? 7 : 0;
-        const kingCol = 4;
         const rookCol = side === 'kingside' ? 7 : 0;
+
+        // Проверяем, находится ли ладья на соответствующей клетке
+        const rook = board[row][rookCol];
+        if (rook !== (isWhite ? 'R' : 'r')) return false;
 
         // Проверяем, чтобы клетки между королём и ладьёй были пустыми
         const emptyCols = side === 'kingside' ? [5, 6] : [1, 2, 3];
@@ -207,14 +210,18 @@ const ChessBoard = () => {
             if (board[row][col] !== '.') return false;
         }
 
-        // Проверяем, чтобы клетки не были под атакой
-        const attackedSquares = getAttackedSquares(board, isWhite ? 'white' : 'black');
-        const kingPath = side === 'kingside' ? [[row, 4], [row, 5], [row, 6]] : [[row, 4], [row, 3], [row, 2]];
+        // Проверяем, чтобы клетки пути короля не были под атакой
+        const kingPath = side === 'kingside'
+            ? [[row, 4], [row, 5], [row, 6]]  // e1 → f1 → g1 или e8 → f8 → g8
+            : [[row, 4], [row, 3], [row, 2]]; // e1 → d1 → c1 или e8 → d8 → c8
+
+        const attackedSquares = getAttackedSquares(board, color);
+        // const opponentColor = isWhite ? 'black' : 'white';
+        // const attackedSquares = getAttackedSquares(board, opponentColor);
 
         for (const [r, c] of kingPath) {
             if (attackedSquares.some(([ar, ac]) => ar === r && ac === c)) return false;
         }
-
         return true;
     };
 
