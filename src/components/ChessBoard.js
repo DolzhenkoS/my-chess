@@ -89,15 +89,25 @@ const ChessBoard = () => {
             setSelectedPiece({ piece, row, col });
             setAvailableMoves(getRookMoves(row, col, piece));
         } else if (piece.toLowerCase() === 'k') {
+
+            const rawMoves = getKingMoves(row, col, piece);
+            const color = piece === piece.toUpperCase() ? 'white' : 'black';
+            const attackedSquares = getAttackedSquares(board, color);
+
+            const moves = rawMoves.filter(
+                ([moveRow, moveCol]) =>
+                    !attackedSquares.some(([attackedRow, attackedCol]) => moveRow === attackedRow && moveCol === attackedCol)
+            );
+
             setSelectedPiece({ piece, row, col });
-            setAvailableMoves(getKingMoves(row, col, piece));
+            setAvailableMoves(moves);
         } else if (piece.toLowerCase() === 'q') {
             setSelectedPiece({ piece, row, col });
             setAvailableMoves(getQueenMoves(row, col, piece));
-        } else if (piece.toLowerCase() === 'b'){
+        } else if (piece.toLowerCase() === 'b') {
             setSelectedPiece({ piece, row, col });
             setAvailableMoves(getBishopMoves(row, col, piece));
-        } else if (piece.toLowerCase()==='n'){
+        } else if (piece.toLowerCase() === 'n') {
             setSelectedPiece({ piece, row, col });
             setAvailableMoves(getKnightMoves(row, col, piece));
         }
@@ -109,6 +119,57 @@ const ChessBoard = () => {
         newBoard[promotion.row][promotion.col] = promotion.color === 'white' ? type : type.toLowerCase();
         setBoard(newBoard);
         setPromotion(null); // Скрыть модальное окно
+    };
+
+    const getAttackedSquares = (board, color) => {
+        const attackedSquares = [];
+
+        const opponentPieces = color === 'white' ? ['p', 'r', 'n', 'b', 'q', 'k'] : ['P', 'R', 'N', 'B', 'Q', 'K'];
+
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                const piece = board[row][col];
+
+                if (opponentPieces.includes(piece)) {
+                    let moves = [];
+
+                    if (piece.toLowerCase() === 'p') {
+                        moves = getPawnAttackSquares(row, col, piece);
+                    } else if (piece.toLowerCase() === 'r') {
+                        moves = getRookMoves(row, col, piece);
+                    } else if (piece.toLowerCase() === 'n') {
+                        moves = getKnightMoves(row, col, piece);
+                    } else if (piece.toLowerCase() === 'b') {
+                        moves = getBishopMoves(row, col, piece);
+                    } else if (piece.toLowerCase() === 'q') {
+                        moves = getQueenMoves(row, col, piece);
+                    } else if (piece.toLowerCase() === 'k') {
+                        moves = getKingMoves(row, col, piece);
+                    }
+
+                    attackedSquares.push(...moves);
+                }
+            }
+        }
+
+        return attackedSquares;
+    };
+
+    const getPawnAttackSquares = (row, col, piece) => {
+        const moves = [];
+        const direction = piece === 'P' ? -1 : 1; // Белая пешка идёт вверх, чёрная вниз
+
+        const attackLeft = [row + direction, col - 1];
+        const attackRight = [row + direction, col + 1];
+
+        if (attackLeft[0] >= 0 && attackLeft[0] < 8 && attackLeft[1] >= 0 && attackLeft[1] < 8) {
+            moves.push(attackLeft);
+        }
+        if (attackRight[0] >= 0 && attackRight[0] < 8 && attackRight[1] >= 0 && attackRight[1] < 8) {
+            moves.push(attackRight);
+        }
+
+        return moves;
     };
 
     // Функция для получения изображения фигуры
@@ -245,7 +306,6 @@ const ChessBoard = () => {
             }
         }
 
-        // TODO: Реализовать проверку клеток, находящихся под ударом
         return moves;
     };
 
@@ -362,36 +422,36 @@ const ChessBoard = () => {
     const getKnightMoves = (row, col, piece) => {
         const moves = [];
         const knightMoves = [
-          [-2, -1], // вверх-вверх-влево
-          [-2, 1],  // вверх-вверх-вправо
-          [-1, -2], // вверх-влево-влево
-          [-1, 2],  // вверх-вправо-вправо
-          [1, -2],  // вниз-влево-влево
-          [1, 2],   // вниз-вправо-вправо
-          [2, -1],  // вниз-вниз-влево
-          [2, 1],   // вниз-вниз-вправо
+            [-2, -1], // вверх-вверх-влево
+            [-2, 1],  // вверх-вверх-вправо
+            [-1, -2], // вверх-влево-влево
+            [-1, 2],  // вверх-вправо-вправо
+            [1, -2],  // вниз-влево-влево
+            [1, 2],   // вниз-вправо-вправо
+            [2, -1],  // вниз-вниз-влево
+            [2, 1],   // вниз-вниз-вправо
         ];
-      
+
         for (const [dx, dy] of knightMoves) {
-          const newRow = row + dx;
-          const newCol = col + dy;
-      
-          if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-            const targetSquare = board[newRow][newCol];
-      
-            if (
-              targetSquare === '.' || 
-              (piece === piece.toUpperCase() && targetSquare === targetSquare.toLowerCase()) ||
-              (piece === piece.toLowerCase() && targetSquare === targetSquare.toUpperCase())
-            ) {
-              moves.push([newRow, newCol]);
+            const newRow = row + dx;
+            const newCol = col + dy;
+
+            if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                const targetSquare = board[newRow][newCol];
+
+                if (
+                    targetSquare === '.' ||
+                    (piece === piece.toUpperCase() && targetSquare === targetSquare.toLowerCase()) ||
+                    (piece === piece.toLowerCase() && targetSquare === targetSquare.toUpperCase())
+                ) {
+                    moves.push([newRow, newCol]);
+                }
             }
-          }
         }
-      
+
         return moves;
-      };
-      
+    };
+
     return (
         <div className="chess-board-wrapper">
             <div className="row-coordinates">
