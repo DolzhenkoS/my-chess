@@ -30,41 +30,58 @@ const ChessBoard = () => {
 
     const [board, setBoard] = useState(initialBoard);
     const [selectedPiece, setSelectedPiece] = useState(null); // Выбранная фигура
-    const [selectedSquare, setSelectedSquare] = useState(null); // Состояние выбранной клетки
     const [availableMoves, setAvailableMoves] = useState([]); // Доступные ходы
+    const [lastMove, setLastMove] = useState(null); // { from: [row, col], to: [row, col], piece: 'P' }
 
     // Функция для обработки клика по клетке
     const handleSquareClick = (row, col) => {
         const piece = board[row][col];
-
+      
         if (selectedPiece) {
-            // Если клетка выбрана и доступна для хода
-            const isMoveValid = availableMoves.some(
-                ([moveRow, moveCol]) => moveRow === row && moveCol === col
-            );
-
-            if (isMoveValid) {
-                // Выполнить ход
-                const newBoard = board.map((boardRow) => [...boardRow]);
-                newBoard[row][col] = selectedPiece.piece;
-                newBoard[selectedPiece.row][selectedPiece.col] = '.';
-                setBoard(newBoard);
-
-                // Сброс выбора
-                setSelectedPiece(null);
-                setAvailableMoves([]);
-            } else {
-                // Сброс, если клик вне доступных клеток
-                setSelectedPiece(null);
-                setAvailableMoves([]);
+          const isMoveValid = availableMoves.some(
+            ([moveRow, moveCol]) => moveRow === row && moveCol === col
+          );
+      
+          if (isMoveValid) {
+            const newBoard = board.map((boardRow) => [...boardRow]);
+      
+            // Проверяем взятие на проходе
+            if (
+              selectedPiece.piece.toLowerCase() === 'p' &&
+              lastMove &&
+              lastMove.piece.toLowerCase() === 'p' &&
+              Math.abs(lastMove.from[0] - lastMove.to[0]) === 2 &&
+              lastMove.to[0] === row - (selectedPiece.piece === 'P' ? -1 : 1) &&
+              lastMove.to[1] === col
+            ) {
+              newBoard[lastMove.to[0]][lastMove.to[1]] = '.'; // Убираем взятую пешку
             }
+      
+            // Перемещаем выбранную фигуру
+            newBoard[row][col] = selectedPiece.piece;
+            newBoard[selectedPiece.row][selectedPiece.col] = '.';
+      
+            setBoard(newBoard);
+      
+            // Сохраняем последний ход
+            setLastMove({
+              from: [selectedPiece.row, selectedPiece.col],
+              to: [row, col],
+              piece: selectedPiece.piece,
+            });
+      
+            setSelectedPiece(null);
+            setAvailableMoves([]);
+          } else {
+            setSelectedPiece(null);
+            setAvailableMoves([]);
+          }
         } else if (piece === 'P' || piece === 'p') {
-            // Если фигура — пешка, рассчитываем доступные ходы
-            setSelectedPiece({ piece, row, col });
-            setAvailableMoves(getPawnMoves(row, col, piece));
+          setSelectedPiece({ piece, row, col });
+          setAvailableMoves(getPawnMoves(row, col, piece));
         }
-    };
-
+      };
+      
     // Функция для получения изображения фигуры
     const getPieceImage = (piece) => {
         switch (piece) {
@@ -87,62 +104,51 @@ const ChessBoard = () => {
     const getPawnMoves = (row, col, piece) => {
         const moves = [];
         const direction = piece === 'P' ? -1 : 1; // Белые двигаются вверх, чёрные — вниз
-
-        // Ход вперёд на одну клетку
+      
+        // Ход вперёд
         if (board[row + direction] && board[row + direction][col] === '.') {
-            moves.push([row + direction, col]);
-
-            // Ход вперёд на две клетки с начальной позиции
-            if ((piece === 'P' && row === 6) || (piece === 'p' && row === 1)) {
-                if (board[row + 2 * direction] && board[row + 2 * direction][col] === '.') {
-                    moves.push([row + 2 * direction, col]);
-                }
+          moves.push([row + direction, col]);
+      
+          // Ход на две клетки с начальной позиции
+          if ((piece === 'P' && row === 6) || (piece === 'p' && row === 1)) {
+            if (board[row + 2 * direction] && board[row + 2 * direction][col] === '.') {
+              moves.push([row + 2 * direction, col]);
             }
+          }
         }
-
+      
         // Взятие фигур по диагонали
         [-1, 1].forEach((offset) => {
-            const targetCol = col + offset;
-            if (
-                board[row + direction] &&
-                board[row + direction][targetCol] &&
-                board[row + direction][targetCol] !== '.' &&
-                (piece === 'P' ? board[row + direction][targetCol] === board[row + direction][targetCol].toLowerCase() :
-                    board[row + direction][targetCol] === board[row + direction][targetCol].toUpperCase())
-            ) {
-                moves.push([row + direction, targetCol]);
-            }
+          const targetCol = col + offset;
+      
+          // Обычное взятие
+          if (
+            board[row + direction] &&
+            board[row + direction][targetCol] &&
+            board[row + direction][targetCol] !== '.' &&
+            (piece === 'P' ? board[row + direction][targetCol] === board[row + direction][targetCol].toLowerCase() :
+                             board[row + direction][targetCol] === board[row + direction][targetCol].toUpperCase())
+          ) {
+            moves.push([row + direction, targetCol]);
+          }
+      
+          // Взятие на проходе
+          if (
+            lastMove &&
+            lastMove.piece.toLowerCase() === 'p' &&
+            Math.abs(lastMove.from[0] - lastMove.to[0]) === 2 && // Пешка двигалась на две клетки
+            lastMove.to[0] === row && // Пешка находится на том же ряду
+            lastMove.to[1] === targetCol // Пешка находится на соседнем столбце
+          ) {
+            moves.push([row + direction, targetCol]);
+          }
         });
-
+      
         return moves;
-    };
-
-    // Функция для рендеринга клетки
-    // const renderSquare = (row, col) => {
-    //     const isBlack = (row + col) % 2 === 1;
-    //     const piece = board[row][col];
-    //     const pieceClass = piece !== '.' ? `piece${piece === piece.toUpperCase() ? 'white' : 'black'}` : '';
-    //     const isSelected = selectedSquare && selectedSquare[0] === row && selectedSquare[1] === col;
-
-    //     return (
-    //         <div
-    //             key={`${row}-${col}`}
-    //             className={`square ${isBlack ? 'black' : 'white'} ${pieceClass} ${isSelected ? 'selected' : ''}`}
-    //             onClick={() => handleSquareClick(row, col)}
-    //         >
-    //             {piece !== '.' && <img src={getPieceImage(piece)} alt={piece} className="piece-image" />}
-    //         </div>
-    //     );
-    // };
+      };
+      
 
     return (
-        // <div className="chess-board">
-        //     {board.map((row, rowIndex) => (
-        //         <div key={rowIndex} className="row">
-        //             {row.map((_, colIndex) => renderSquare(rowIndex, colIndex))}
-        //         </div>
-        //     ))}
-        // </div>
         <div className="chess-board">
             {board.map((row, rowIndex) => (
                 <div key={rowIndex} className="row">
