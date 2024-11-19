@@ -82,9 +82,13 @@ const ChessBoard = () => {
                 setSelectedPiece(null);
                 setAvailableMoves([]);
             }
-        } else if (piece === 'P' || piece === 'p') {
+        } else if (piece.toLowerCase() === 'p') {
             setSelectedPiece({ piece, row, col });
             setAvailableMoves(getPawnMoves(row, col, piece));
+        } else if (piece.toLowerCase()==='r'){
+            setSelectedPiece({ piece, row, col });
+            setAvailableMoves(getRookMoves(row, col, piece));
+ 
         }
     };
 
@@ -161,57 +165,45 @@ const ChessBoard = () => {
         return moves;
     };
 
-
-    // return (
-        // <div className="chess-board">
-        //     {board.map((row, rowIndex) => (
-        //         <div key={rowIndex} className="row">
-        //             {row.map((square, colIndex) => (
-        //                 <div
-        //                     key={`${rowIndex}-${colIndex}`}
-        //                     className={`square ${(rowIndex + colIndex) % 2 === 0 ? 'white' : 'black'
-        //                         } ${availableMoves.some(([r, c]) => r === rowIndex && c === colIndex)
-        //                             ? 'highlight'
-        //                             : ''
-        //                         } ${selectedPiece?.row === rowIndex && selectedPiece?.col === colIndex
-        //                             ? 'selected'
-        //                             : ''
-        //                         }`}
-        //                     onClick={() => handleSquareClick(rowIndex, colIndex)}
-        //                 >
-        //                     {square !== '.' && (
-        //                         <img
-        //                             src={getPieceImage(square)}
-        //                             alt={square}
-        //                             className="piece-image"
-        //                         />
-        //                     )}
-        //                 </div>
-        //             ))}
-        //         </div>
-        //     ))}
-
-        //     {promotion && (
-        //         <div className="promotion-modal">
-        //             <div className="promotion-options">
-        //                 {['Q', 'R', 'B', 'N'].map((type) => (
-        //                     <div
-        //                         key={type}
-        //                         className="promotion-piece"
-        //                         onClick={() => handlePromotion(type)}
-        //                     >
-        //                         <img
-        //                             src={getPieceImage(promotion.color === 'white' ? type : type.toLowerCase())}
-        //                             alt={type}
-        //                         />
-        //                     </div>
-        //                 ))}
-        //             </div>
-        //         </div>
-        //     )}
-        // </div>
-
-    // );
+    const getRookMoves = (row, col, piece) => {
+        const moves = [];
+        const directionVectors = [
+          [-1, 0], // вверх
+          [1, 0],  // вниз
+          [0, -1], // влево
+          [0, 1],  // вправо
+        ];
+      
+        // Проверяем каждое направление
+        for (const [dx, dy] of directionVectors) {
+          let r = row + dx;
+          let c = col + dy;
+      
+          while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+            const targetSquare = board[r][c];
+      
+            if (targetSquare === '.') {
+              moves.push([r, c]); // Клетка пуста, добавляем в доступные ходы
+            } else if (
+              (piece === piece.toUpperCase() && targetSquare === targetSquare.toLowerCase()) ||
+              (piece === piece.toLowerCase() && targetSquare === targetSquare.toUpperCase())
+            ) {
+              // Вражеская фигура — добавляем клетку и прекращаем поиск в этом направлении
+              moves.push([r, c]);
+              break;
+            } else {
+              // Своя фигура — прекращаем поиск в этом направлении
+              break;
+            }
+      
+            r += dx;
+            c += dy;
+          }
+        }
+      
+        return moves;
+      };
+      
 
     return (
         <div className="chess-board-wrapper">
