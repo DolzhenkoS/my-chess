@@ -32,54 +32,68 @@ const ChessBoard = () => {
     const [selectedPiece, setSelectedPiece] = useState(null); // Выбранная фигура
     const [availableMoves, setAvailableMoves] = useState([]); // Доступные ходы
     const [lastMove, setLastMove] = useState(null); // { from: [row, col], to: [row, col], piece: 'P' }
+    const [promotion, setPromotion] = useState(null); // { row, col, color }
 
     // Функция для обработки клика по клетке
     const handleSquareClick = (row, col) => {
         const piece = board[row][col];
-      
+
         if (selectedPiece) {
-          const isMoveValid = availableMoves.some(
-            ([moveRow, moveCol]) => moveRow === row && moveCol === col
-          );
-      
-          if (isMoveValid) {
-            const newBoard = board.map((boardRow) => [...boardRow]);
-      
-            // Проверяем взятие на проходе
-            if (
-              selectedPiece.piece.toLowerCase() === 'p' &&
-              lastMove &&
-              lastMove.piece.toLowerCase() === 'p' &&
-              Math.abs(lastMove.from[0] - lastMove.to[0]) === 2 &&
-              lastMove.to[0] === row - (selectedPiece.piece === 'P' ? -1 : 1) &&
-              lastMove.to[1] === col
-            ) {
-              newBoard[lastMove.to[0]][lastMove.to[1]] = '.'; // Убираем взятую пешку
+            const isMoveValid = availableMoves.some(
+                ([moveRow, moveCol]) => moveRow === row && moveCol === col
+            );
+
+            if (isMoveValid) {
+                const newBoard = board.map((boardRow) => [...boardRow]);
+
+                // Проверяем взятие на проходе
+                if (
+                    selectedPiece.piece.toLowerCase() === 'p' &&
+                    lastMove &&
+                    lastMove.piece.toLowerCase() === 'p' &&
+                    Math.abs(lastMove.from[0] - lastMove.to[0]) === 2 &&
+                    lastMove.to[0] === row - (selectedPiece.piece === 'P' ? -1 : 1) &&
+                    lastMove.to[1] === col
+                ) {
+                    newBoard[lastMove.to[0]][lastMove.to[1]] = '.'; // Убираем взятую пешку
+                }
+
+                // Перемещаем выбранную фигуру
+                newBoard[row][col] = selectedPiece.piece;
+                newBoard[selectedPiece.row][selectedPiece.col] = '.';
+
+                //Проверка превращения
+                if ((selectedPiece.piece === 'P' && row === 0) || (selectedPiece.piece === 'p' && row === 7)) {
+                    setPromotion({ row, col, color: piece === 'P' ? 'white' : 'black' });
+                }
+
+                setBoard(newBoard);
+
+                // Сохраняем последний ход
+                setLastMove({
+                    from: [selectedPiece.row, selectedPiece.col],
+                    to: [row, col],
+                    piece: selectedPiece.piece,
+                });
+
+                setSelectedPiece(null);
+                setAvailableMoves([]);
+            } else {
+                setSelectedPiece(null);
+                setAvailableMoves([]);
             }
-      
-            // Перемещаем выбранную фигуру
-            newBoard[row][col] = selectedPiece.piece;
-            newBoard[selectedPiece.row][selectedPiece.col] = '.';
-      
-            setBoard(newBoard);
-      
-            // Сохраняем последний ход
-            setLastMove({
-              from: [selectedPiece.row, selectedPiece.col],
-              to: [row, col],
-              piece: selectedPiece.piece,
-            });
-      
-            setSelectedPiece(null);
-            setAvailableMoves([]);
-          } else {
-            setSelectedPiece(null);
-            setAvailableMoves([]);
-          }
         } else if (piece === 'P' || piece === 'p') {
-          setSelectedPiece({ piece, row, col });
-          setAvailableMoves(getPawnMoves(row, col, piece));
+            setSelectedPiece({ piece, row, col });
+            setAvailableMoves(getPawnMoves(row, col, piece));
         }
+    };
+
+    //Выбор фигуры при проходе пешки
+    const handlePromotion = (type) => {
+        const newBoard = board.map((row) => [...row]);
+        newBoard[promotion.row][promotion.col] = promotion.color === 'white' ? type : type.toLowerCase();
+        setBoard(newBoard);
+        setPromotion(null); // Скрыть модальное окно
       };
       
     // Функция для получения изображения фигуры
@@ -104,49 +118,49 @@ const ChessBoard = () => {
     const getPawnMoves = (row, col, piece) => {
         const moves = [];
         const direction = piece === 'P' ? -1 : 1; // Белые двигаются вверх, чёрные — вниз
-      
+
         // Ход вперёд
         if (board[row + direction] && board[row + direction][col] === '.') {
-          moves.push([row + direction, col]);
-      
-          // Ход на две клетки с начальной позиции
-          if ((piece === 'P' && row === 6) || (piece === 'p' && row === 1)) {
-            if (board[row + 2 * direction] && board[row + 2 * direction][col] === '.') {
-              moves.push([row + 2 * direction, col]);
+            moves.push([row + direction, col]);
+
+            // Ход на две клетки с начальной позиции
+            if ((piece === 'P' && row === 6) || (piece === 'p' && row === 1)) {
+                if (board[row + 2 * direction] && board[row + 2 * direction][col] === '.') {
+                    moves.push([row + 2 * direction, col]);
+                }
             }
-          }
         }
-      
+
         // Взятие фигур по диагонали
         [-1, 1].forEach((offset) => {
-          const targetCol = col + offset;
-      
-          // Обычное взятие
-          if (
-            board[row + direction] &&
-            board[row + direction][targetCol] &&
-            board[row + direction][targetCol] !== '.' &&
-            (piece === 'P' ? board[row + direction][targetCol] === board[row + direction][targetCol].toLowerCase() :
-                             board[row + direction][targetCol] === board[row + direction][targetCol].toUpperCase())
-          ) {
-            moves.push([row + direction, targetCol]);
-          }
-      
-          // Взятие на проходе
-          if (
-            lastMove &&
-            lastMove.piece.toLowerCase() === 'p' &&
-            Math.abs(lastMove.from[0] - lastMove.to[0]) === 2 && // Пешка двигалась на две клетки
-            lastMove.to[0] === row && // Пешка находится на том же ряду
-            lastMove.to[1] === targetCol // Пешка находится на соседнем столбце
-          ) {
-            moves.push([row + direction, targetCol]);
-          }
+            const targetCol = col + offset;
+
+            // Обычное взятие
+            if (
+                board[row + direction] &&
+                board[row + direction][targetCol] &&
+                board[row + direction][targetCol] !== '.' &&
+                (piece === 'P' ? board[row + direction][targetCol] === board[row + direction][targetCol].toLowerCase() :
+                    board[row + direction][targetCol] === board[row + direction][targetCol].toUpperCase())
+            ) {
+                moves.push([row + direction, targetCol]);
+            }
+
+            // Взятие на проходе
+            if (
+                lastMove &&
+                lastMove.piece.toLowerCase() === 'p' &&
+                Math.abs(lastMove.from[0] - lastMove.to[0]) === 2 && // Пешка двигалась на две клетки
+                lastMove.to[0] === row && // Пешка находится на том же ряду
+                lastMove.to[1] === targetCol // Пешка находится на соседнем столбце
+            ) {
+                moves.push([row + direction, targetCol]);
+            }
         });
-      
+
         return moves;
-      };
-      
+    };
+
 
     return (
         <div className="chess-board">
@@ -176,6 +190,25 @@ const ChessBoard = () => {
                     ))}
                 </div>
             ))}
+
+            {promotion && (
+                <div className="promotion-modal">
+                    <div className="promotion-options">
+                        {['Q', 'R', 'B', 'N'].map((type) => (
+                            <div
+                                key={type}
+                                className="promotion-piece"
+                                onClick={() => handlePromotion(type)}
+                            >
+                                <img
+                                    src={getPieceImage(promotion.color === 'white' ? type : type.toLowerCase())}
+                                    alt={type}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
 
     );
