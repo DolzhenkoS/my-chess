@@ -85,10 +85,21 @@ const ChessBoard = () => {
         } else if (piece.toLowerCase() === 'p') {
             setSelectedPiece({ piece, row, col });
             setAvailableMoves(getPawnMoves(row, col, piece));
-        } else if (piece.toLowerCase()==='r'){
+        } else if (piece.toLowerCase() === 'r') {
             setSelectedPiece({ piece, row, col });
             setAvailableMoves(getRookMoves(row, col, piece));
- 
+        } else if (piece.toLowerCase() === 'k') {
+            setSelectedPiece({ piece, row, col });
+            setAvailableMoves(getKingMoves(row, col, piece));
+        } else if (piece.toLowerCase() === 'q') {
+            setSelectedPiece({ piece, row, col });
+            setAvailableMoves(getQueenMoves(row, col, piece));
+        } else if (piece.toLowerCase() === 'b'){
+            setSelectedPiece({ piece, row, col });
+            setAvailableMoves(getBishopMoves(row, col, piece));
+        } else if (piece.toLowerCase()==='n'){
+            setSelectedPiece({ piece, row, col });
+            setAvailableMoves(getKnightMoves(row, col, piece));
         }
     };
 
@@ -168,43 +179,219 @@ const ChessBoard = () => {
     const getRookMoves = (row, col, piece) => {
         const moves = [];
         const directionVectors = [
-          [-1, 0], // вверх
-          [1, 0],  // вниз
-          [0, -1], // влево
-          [0, 1],  // вправо
+            [-1, 0], // вверх
+            [1, 0],  // вниз
+            [0, -1], // влево
+            [0, 1],  // вправо
         ];
-      
+
         // Проверяем каждое направление
         for (const [dx, dy] of directionVectors) {
-          let r = row + dx;
-          let c = col + dy;
+            let r = row + dx;
+            let c = col + dy;
+
+            while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                const targetSquare = board[r][c];
+
+                if (targetSquare === '.') {
+                    moves.push([r, c]); // Клетка пуста, добавляем в доступные ходы
+                } else if (
+                    (piece === piece.toUpperCase() && targetSquare === targetSquare.toLowerCase()) ||
+                    (piece === piece.toLowerCase() && targetSquare === targetSquare.toUpperCase())
+                ) {
+                    // Вражеская фигура — добавляем клетку и прекращаем поиск в этом направлении
+                    moves.push([r, c]);
+                    break;
+                } else {
+                    // Своя фигура — прекращаем поиск в этом направлении
+                    break;
+                }
+
+                r += dx;
+                c += dy;
+            }
+        }
+
+        return moves;
+    };
+
+    const getKingMoves = (row, col, piece) => {
+        const moves = [];
+        const directions = [
+            [-1, 0],  // вверх
+            [1, 0],   // вниз
+            [0, -1],  // влево
+            [0, 1],   // вправо
+            [-1, -1], // вверх-влево
+            [-1, 1],  // вверх-вправо
+            [1, -1],  // вниз-влево
+            [1, 1],   // вниз-вправо
+        ];
+
+        for (const [dx, dy] of directions) {
+            const newRow = row + dx;
+            const newCol = col + dy;
+
+            if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                const targetSquare = board[newRow][newCol];
+
+                if (
+                    targetSquare === '.' ||
+                    (piece === piece.toUpperCase() && targetSquare === targetSquare.toLowerCase()) ||
+                    (piece === piece.toLowerCase() && targetSquare === targetSquare.toUpperCase())
+                ) {
+                    moves.push([newRow, newCol]);
+                }
+            }
+        }
+
+        // TODO: Реализовать проверку клеток, находящихся под ударом
+        return moves;
+    };
+
+    const getQueenMoves = (row, col, piece) => {
+        const moves = [];
+
+        // Направления движения ладьи
+        const rookDirections = [
+            [-1, 0], // вверх
+            [1, 0],  // вниз
+            [0, -1], // влево
+            [0, 1],  // вправо
+        ];
+
+        // Направления движения слона
+        const bishopDirections = [
+            [-1, -1], // вверх-влево
+            [-1, 1],  // вверх-вправо
+            [1, -1],  // вниз-влево
+            [1, 1],   // вниз-вправо
+        ];
+
+        // Проверяем все направления ладьи
+        for (const [dx, dy] of rookDirections) {
+            let r = row + dx;
+            let c = col + dy;
+
+            while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                const targetSquare = board[r][c];
+
+                if (targetSquare === '.') {
+                    moves.push([r, c]);
+                } else if (
+                    (piece === piece.toUpperCase() && targetSquare === targetSquare.toLowerCase()) ||
+                    (piece === piece.toLowerCase() && targetSquare === targetSquare.toUpperCase())
+                ) {
+                    moves.push([r, c]);
+                    break;
+                } else {
+                    break;
+                }
+
+                r += dx;
+                c += dy;
+            }
+        }
+
+        // Проверяем все направления слона
+        for (const [dx, dy] of bishopDirections) {
+            let r = row + dx;
+            let c = col + dy;
+
+            while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                const targetSquare = board[r][c];
+
+                if (targetSquare === '.') {
+                    moves.push([r, c]);
+                } else if (
+                    (piece === piece.toUpperCase() && targetSquare === targetSquare.toLowerCase()) ||
+                    (piece === piece.toLowerCase() && targetSquare === targetSquare.toUpperCase())
+                ) {
+                    moves.push([r, c]);
+                    break;
+                } else {
+                    break;
+                }
+
+                r += dx;
+                c += dy;
+            }
+        }
+
+        return moves;
+    };
+
+    const getBishopMoves = (row, col, piece) => {
+        const moves = [];
+        const directions = [
+            [-1, -1], // вверх-влево
+            [-1, 1],  // вверх-вправо
+            [1, -1],  // вниз-влево
+            [1, 1],   // вниз-вправо
+        ];
+
+        for (const [dx, dy] of directions) {
+            let r = row + dx;
+            let c = col + dy;
+
+            while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                const targetSquare = board[r][c];
+
+                if (targetSquare === '.') {
+                    moves.push([r, c]); // Клетка пуста, добавляем в доступные ходы
+                } else if (
+                    (piece === piece.toUpperCase() && targetSquare === targetSquare.toLowerCase()) ||
+                    (piece === piece.toLowerCase() && targetSquare === targetSquare.toUpperCase())
+                ) {
+                    // Вражеская фигура — добавляем клетку и прекращаем поиск в этом направлении
+                    moves.push([r, c]);
+                    break;
+                } else {
+                    // Своя фигура — прекращаем поиск в этом направлении
+                    break;
+                }
+
+                r += dx;
+                c += dy;
+            }
+        }
+
+        return moves;
+    };
+
+    const getKnightMoves = (row, col, piece) => {
+        const moves = [];
+        const knightMoves = [
+          [-2, -1], // вверх-вверх-влево
+          [-2, 1],  // вверх-вверх-вправо
+          [-1, -2], // вверх-влево-влево
+          [-1, 2],  // вверх-вправо-вправо
+          [1, -2],  // вниз-влево-влево
+          [1, 2],   // вниз-вправо-вправо
+          [2, -1],  // вниз-вниз-влево
+          [2, 1],   // вниз-вниз-вправо
+        ];
       
-          while (r >= 0 && r < 8 && c >= 0 && c < 8) {
-            const targetSquare = board[r][c];
+        for (const [dx, dy] of knightMoves) {
+          const newRow = row + dx;
+          const newCol = col + dy;
       
-            if (targetSquare === '.') {
-              moves.push([r, c]); // Клетка пуста, добавляем в доступные ходы
-            } else if (
+          if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+            const targetSquare = board[newRow][newCol];
+      
+            if (
+              targetSquare === '.' || 
               (piece === piece.toUpperCase() && targetSquare === targetSquare.toLowerCase()) ||
               (piece === piece.toLowerCase() && targetSquare === targetSquare.toUpperCase())
             ) {
-              // Вражеская фигура — добавляем клетку и прекращаем поиск в этом направлении
-              moves.push([r, c]);
-              break;
-            } else {
-              // Своя фигура — прекращаем поиск в этом направлении
-              break;
+              moves.push([newRow, newCol]);
             }
-      
-            r += dx;
-            c += dy;
           }
         }
       
         return moves;
       };
       
-
     return (
         <div className="chess-board-wrapper">
             <div className="row-coordinates">
@@ -223,52 +410,52 @@ const ChessBoard = () => {
                     ))}
                 </div>
                 <div className="chess-board">
-            {board.map((row, rowIndex) => (
-                <div key={rowIndex} className="row">
-                    {row.map((square, colIndex) => (
-                        <div
-                            key={`${rowIndex}-${colIndex}`}
-                            className={`square ${(rowIndex + colIndex) % 2 === 0 ? 'white' : 'black'
-                                } ${availableMoves.some(([r, c]) => r === rowIndex && c === colIndex)
-                                    ? 'highlight'
-                                    : ''
-                                } ${selectedPiece?.row === rowIndex && selectedPiece?.col === colIndex
-                                    ? 'selected'
-                                    : ''
-                                }`}
-                            onClick={() => handleSquareClick(rowIndex, colIndex)}
-                        >
-                            {square !== '.' && (
-                                <img
-                                    src={getPieceImage(square)}
-                                    alt={square}
-                                    className="piece-image"
-                                />
-                            )}
+                    {board.map((row, rowIndex) => (
+                        <div key={rowIndex} className="row">
+                            {row.map((square, colIndex) => (
+                                <div
+                                    key={`${rowIndex}-${colIndex}`}
+                                    className={`square ${(rowIndex + colIndex) % 2 === 0 ? 'white' : 'black'
+                                        } ${availableMoves.some(([r, c]) => r === rowIndex && c === colIndex)
+                                            ? 'highlight'
+                                            : ''
+                                        } ${selectedPiece?.row === rowIndex && selectedPiece?.col === colIndex
+                                            ? 'selected'
+                                            : ''
+                                        }`}
+                                    onClick={() => handleSquareClick(rowIndex, colIndex)}
+                                >
+                                    {square !== '.' && (
+                                        <img
+                                            src={getPieceImage(square)}
+                                            alt={square}
+                                            className="piece-image"
+                                        />
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     ))}
-                </div>
-            ))}
 
-            {promotion && (
-                <div className="promotion-modal">
-                    <div className="promotion-options">
-                        {['Q', 'R', 'B', 'N'].map((type) => (
-                            <div
-                                key={type}
-                                className="promotion-piece"
-                                onClick={() => handlePromotion(type)}
-                            >
-                                <img
-                                    src={getPieceImage(promotion.color === 'white' ? type : type.toLowerCase())}
-                                    alt={type}
-                                />
+                    {promotion && (
+                        <div className="promotion-modal">
+                            <div className="promotion-options">
+                                {['Q', 'R', 'B', 'N'].map((type) => (
+                                    <div
+                                        key={type}
+                                        className="promotion-piece"
+                                        onClick={() => handlePromotion(type)}
+                                    >
+                                        <img
+                                            src={getPieceImage(promotion.color === 'white' ? type : type.toLowerCase())}
+                                            alt={type}
+                                        />
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    )}
                 </div>
-            )}
-        </div>
             </div>
         </div>
 
